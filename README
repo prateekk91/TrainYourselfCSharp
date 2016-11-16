@@ -1,7 +1,14 @@
-====================================================================
-This repo is an example of how to use Kinect skeleton tracking
-(using the official Kinect SDK) within a Model-View-ViewModel (MVVM)
-pattern in WPF. The app wraps the Kinect runtime as a "service"
-that is injected into the ViewModel, de-coupling the ViewModel
-and View (UI) from Kinect sensor logic.
-====================================================================
+Very often, you don't have a trainer to continuously watch you while doing exercises in gym, or at home. 
+Result: You might end up doing exercises with incorrect postures and ending up with an injury.
+
+Trainyourself is intended to provide you with live feedback on a Google Glass while you do your exercise.
+The user's posture would be monitored by a Kinect placed in front of the user. The posture would be compared
+against a set of ideal postures for the exercise, and if the user performs a pose incorrectly, our application
+will not allow him/her to proceed with the next step in the exercise.
+
+We used google glass to provide feedback because its not possible for the user to be continuously looking at a screen
+placed in front of him. Very often you perform exercises where its not physically possible to look forward (at the screen)
+without disforming your posture during exercising. A google glass would be in front of the user's eyes no matter where
+the user is looking.
+
+This is the Kinect part of the application, developed in C#. The C# code is communicating with the Google Glass using web sockets.
