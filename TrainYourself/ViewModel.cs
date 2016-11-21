@@ -16,144 +16,7 @@ using LightBuzz.Vitruvius;
 
 namespace KinectMvvm
 {
-
-    [Serializable]
-    [JsonConverter(typeof(SkeletonSerializer))]
-    public class BodyJoints
-    {
-        Dictionary<JointType, Position> joints;
-
-        [Serializable]
-        public class Position
-        {
-            public float x;
-            public float y;
-            public float z;
-            
-            public Position(float x_, float y_, float z_)
-            {
-                x = x_;
-                y = y_;
-                z = z_;
-            }
-        }
-
-        public Joint getJoint(JointType jointType)
-        {
-            Joint joint = new Joint();
-            Position pos = joints[jointType];
-            joint.Position.X = pos.x;
-            joint.Position.Y = pos.y;
-            joint.Position.Z = pos.z;
-
-            return joint;
-        }
-
-        public static double operator-(BodyJoints body1, BodyJoints body2)
-        {
-            double totalDeviation = 0;
-            var shoulder = body1.getJoint(JointType.ShoulderRight);
-            var elbow = body1.getJoint(JointType.ElbowRight);
-            var hand = body1.getJoint(JointType.WristRight);
-
-            var shoulder2 = body2.getJoint(JointType.ShoulderRight);
-            var elbow2 = body2.getJoint(JointType.ElbowRight);
-            var hand2 = body2.getJoint(JointType.WristRight);
-
-            var angle1 = elbow.Angle(shoulder, hand);
-            var angle2 = elbow2.Angle(shoulder2, hand2);
-            totalDeviation = angle1;
-            return totalDeviation;
-        }
-
-        private Position getJointPositions(Joint joint)
-        {
-            return new Position(joint.Position.X, joint.Position.Y, joint.Position.Z);
-        }
-
-        public int getNumJoints()
-        {
-            return joints.Count;
-        }
-
-        public void Translate(float[] diff)
-        {
-            foreach (KeyValuePair<JointType, Position> entry in joints)
-            {
-                entry.Value.x += diff[0];
-                entry.Value.y += diff[1];
-                entry.Value.z += diff[2];
-            }
-        }
-
-        public BodyJoints(Body body)
-        {
-            joints = new Dictionary<JointType, Position>();
-            joints.Add( JointType.Head , getJointPositions(body.Joints[JointType.Head]));
-            
-            joints.Add( JointType.ShoulderRight , getJointPositions(body.Joints[JointType.ShoulderRight]));
-            joints.Add( JointType.ShoulderLeft , getJointPositions(body.Joints[JointType.ShoulderLeft]));
-            
-            joints.Add( JointType.SpineMid , getJointPositions(body.Joints[JointType.SpineMid]));
-            joints.Add( JointType.SpineBase , getJointPositions(body.Joints[JointType.SpineBase]));
-            
-            joints.Add( JointType.ElbowLeft , getJointPositions(body.Joints[JointType.ElbowLeft]));
-            joints.Add( JointType.ElbowRight , getJointPositions(body.Joints[JointType.ElbowRight]));
-
-            joints.Add(JointType.WristLeft, getJointPositions(body.Joints[JointType.WristLeft]));
-            joints.Add( JointType.WristRight , getJointPositions(body.Joints[JointType.WristRight]));
-        
-            joints.Add( JointType.HipLeft , getJointPositions(body.Joints[JointType.HipLeft]));
-            joints.Add( JointType.HipRight , getJointPositions(body.Joints[JointType.HipRight]));
-
-            joints.Add( JointType.KneeLeft , getJointPositions(body.Joints[JointType.KneeLeft]));
-            joints.Add(JointType.KneeRight, getJointPositions(body.Joints[JointType.KneeRight]));
-            
-            joints.Add( JointType.AnkleLeft, getJointPositions(body.Joints[JointType.AnkleLeft]));
-            joints.Add(JointType.AnkleRight, getJointPositions(body.Joints[JointType.AnkleRight]));
-
-            joints.Add(JointType.FootLeft, getJointPositions(body.Joints[JointType.FootLeft]));
-            joints.Add(JointType.FootRight, getJointPositions(body.Joints[JointType.FootRight]));
-        }
-
-    }
-
-    public class SkeletonSerializer : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-        {
-            return typeof(BodyJoints).IsAssignableFrom(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            JObject jsonObj = new JObject();
-
-            BodyJoints bodyJoints = (BodyJoints)value;
-
-            JArray joints = new JArray();
-            //for (int i = 0; i < bodyJoints.idealBodyJoints.GetLength(0); i++)
-            //{
-            //    JObject joint = new JObject();
-            //    joint.Add("x", bodyJoints.idealBodyJoints[i, 0]);
-            //    joint.Add("y", bodyJoints.idealBodyJoints[i, 1]);
-            //    joint.Add("z", bodyJoints.idealBodyJoints[i, 2]);
-            //    joints.Add(joint);
-            //}
-
-
-            JObject jointJson = new JObject();
-            jointJson.Add("joints", joints);
-
-            jointJson.WriteTo(writer);
-        }
-    }
-
+    
     public class ViewModel : INotifyPropertyChanged
     {
         IKinectService kinectService;
@@ -212,7 +75,7 @@ namespace KinectMvvm
             //stream.Close();
 
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\1.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\exercise1\\1.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
             BodyJoints fileObject = (BodyJoints)formatter.Deserialize(stream);
             stream.Close();
             idealBodyJoints = fileObject;
@@ -296,7 +159,7 @@ namespace KinectMvvm
         {
             BodyJoints fileObject = new BodyJoints(this.trackedBody);
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\exercise2\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\exercise1\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
             i++;
             formatter.Serialize(stream, fileObject);
             stream.Close();
@@ -304,6 +167,7 @@ namespace KinectMvvm
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
+            //Console.WriteLine("Skeletons are not the same");
             //dbManager.setData("Skeletons are not the same");
         }
 
@@ -365,12 +229,12 @@ namespace KinectMvvm
         {
             trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
             double totalDeviation = 0.0;
-            double threshold = 500.0;
+            double threshold = 25.0;
             totalDeviation = trackedBodyJoints - idealBodyJoints;
             Console.WriteLine("Total Deviation = " + totalDeviation);
             if (totalDeviation > threshold)
             {
-                Console.WriteLine("too much error detected");
+                Console.WriteLine(BodyJoints.maxDeviatedJoint.Item1 + " deviated by " + BodyJoints.maxDeviatedJoint.Item2);
                 bodyHasNotDeviated = false;
             }
             else

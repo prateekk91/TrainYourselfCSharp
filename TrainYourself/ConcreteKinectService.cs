@@ -14,6 +14,7 @@ namespace KinectMvvm
         private Body[] bodies = null;
         private int bodyIndex;
         private bool bodyTracked = false;
+        private static int frameCount = 0;
 
         public ConcreteKinectService()
         {
@@ -76,7 +77,12 @@ namespace KinectMvvm
                 {
                     if (this.SkeletonUpdated != null)
                     {
-                        this.SkeletonUpdated(this, new SkeletonEventArgs() { TrackedBody = body });
+                        if (frameCount == 5)
+                        {
+                            this.SkeletonUpdated(this, new SkeletonEventArgs() { TrackedBody = body });
+                            frameCount = 0;
+                        }
+                        frameCount++;
                     }
                 }   
             }
