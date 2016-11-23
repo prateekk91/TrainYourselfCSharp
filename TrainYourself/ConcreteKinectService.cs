@@ -77,7 +77,7 @@ namespace KinectMvvm
                 {
                     if (this.SkeletonUpdated != null)
                     {
-                        if (frameCount == 5)
+                        if (frameCount == 10)
                         {
                             this.SkeletonUpdated(this, new SkeletonEventArgs() { TrackedBody = body });
                             frameCount = 0;

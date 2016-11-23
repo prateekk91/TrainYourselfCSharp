@@ -13,6 +13,7 @@ using Fleck;
 using System.Collections.Generic;
 using Coding4Fun.Kinect.Wpf;
 using LightBuzz.Vitruvius;
+using System.Diagnostics;
 
 namespace KinectMvvm
 {
@@ -53,6 +54,10 @@ namespace KinectMvvm
         //Database Manager and Timer declaration
         DBManager dbManager;
         Timer timer;
+        Stopwatch stopwatch = new Stopwatch();
+        int positionNumber = 1;
+        static List<IWebSocketConnection> _sockets;
+        static bool _initialized = false;
 
         private bool bodyHasNotDeviated = true;
         //Joint Positions for the Ideal body
@@ -63,6 +68,7 @@ namespace KinectMvvm
             dbManager = new DBManager();
             //dbManager.initializeDatabase();
             initializeTimer();
+            InitializeSocketconnection();
             
             this.kinectService = kinectService;
             this.kinectService.SkeletonUpdated += new System.EventHandler<SkeletonEventArgs>(kinectService_SkeletonUpdated);
@@ -74,11 +80,7 @@ namespace KinectMvvm
             //formatter.Serialize(stream, fileObject);
             //stream.Close();
 
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\exercise1\\1.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
-            BodyJoints fileObject = (BodyJoints)formatter.Deserialize(stream);
-            stream.Close();
-            idealBodyJoints = fileObject;
+            LoadPositionFile();
 
             //IFormatter formatter2 = new BinaryFormatter();
             //Stream stream2 = new FileStream("F:\\College\\Quarter4\\218\\project\\positions\\exercise1\\1.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -103,45 +105,99 @@ namespace KinectMvvm
             //this.idealBodyJoints = idealBodyJoints2;
             //setBodyDeviation(idealBodyJoints, idealBodyJoints2);
             */
+        }
 
-            //****************************************************
-            /*
-            
-            string jsonBodyJoints = JsonConvert.SerializeObject(fileObject3);
-
-            Console.WriteLine("printing json " + jsonBodyJoints);
+        private void InitializeSocketconnection()
+        {
+            _sockets = new List<IWebSocketConnection>();
 
             var server = new WebSocketServer("ws://127.0.0.1:8181");
+
             server.Start(socket =>
             {
                 socket.OnOpen = () =>
                 {
-                    _clients.Add(socket);
-                    socket.Send(jsonBodyJoints);
+                    _sockets.Add(socket);
                 };
-
                 socket.OnClose = () =>
                 {
-                    _clients.Remove(socket);
+                    _sockets.Remove(socket);
                 };
-
                 socket.OnMessage = message =>
                 {
-                    foreach (var client in _clients)
-                    {
-                        // Send the message to everyone!
-                        // Also, send the client connection's unique identifier in order
-                        // to recognize who is who.
-                        //       client.Send(client.ConnectionInfo.Id + " says: " + message);
-                        client.Send("sending body joints");
-
-                    }
-                    Console.WriteLine("Switched to " + message);
+                    Console.WriteLine(message);
                 };
             });
 
-            */
-            //***************************************************8
+            _initialized = true;
+        }
+
+        private void startSendingTrackedSkeleton(BodyJoints trackedBodyJoints)
+        {
+            if (!_initialized) return;
+
+            JArray idealJoints = new JArray();
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.Head)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.Neck)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.ShoulderRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.ShoulderLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.SpineMid)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.ElbowLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.ElbowRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.WristLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.WristRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.HipLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.HipRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.KneeLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.KneeRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.FootLeft)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.FootRight)));
+
+            JArray trackedJoints = new JArray();
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.Head)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.Neck)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.ShoulderRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.ShoulderLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.SpineMid)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.ElbowLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.ElbowRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.WristLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.WristRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.HipLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.HipRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.KneeLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.KneeRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.FootLeft)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.FootRight)));
+
+            JObject bodyJointsJson = new JObject();
+            bodyJointsJson.Add("idealBodyJoints", idealJoints);
+            bodyJointsJson.Add("trackedBodyJoints", trackedJoints);
+
+            Console.WriteLine("printing json " + bodyJointsJson);
+
+            foreach (var socket in _sockets)
+            {
+                socket.Send(bodyJointsJson.ToString());
+            }
+        }
+
+        private void LoadPositionFile()
+        {
+            IFormatter formatter = new BinaryFormatter();
+            string fileName = "..\\..\\..\\Dataset\\exercise1\\" + positionNumber.ToString() + ".bin";
+            if (File.Exists(fileName))
+            {
+                Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                BodyJoints fileObject = (BodyJoints)formatter.Deserialize(stream);
+                stream.Close();
+                idealBodyJoints = fileObject;
+            }
+            else
+            {
+                idealBodyJoints = null;
+                Console.WriteLine("You are done with the exercise");
+            }
         }
 
         private void initializeTimer()
@@ -167,7 +223,7 @@ namespace KinectMvvm
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
-            //Console.WriteLine("Skeletons are not the same");
+            //Console.WriteLine("Skeleton not being detected");
             //dbManager.setData("Skeletons are not the same");
         }
 
@@ -176,16 +232,23 @@ namespace KinectMvvm
             if (App.Current.MainWindow != null)
             {
                 this.trackedBody = e.TrackedBody;
-                getSkeletonAndUpdateTimer();
+
+                if (idealBodyJoints != null)
+                {
+                    getSkeletonAndUpdateTimer();
+                }
 
                 //Joint Positions for the Tracked body
                 BodyJoints trackedBodyJoints = new BodyJoints(trackedBody);
-                
+
+                //Sending Tracked skeleton via web socket 
+                startSendingTrackedSkeleton(trackedBodyJoints);
+
                 //Compare the tracked and ideal right hand joint positions
                 setBodyDeviation(trackedBodyJoints, idealBodyJoints);
             }
         }
-        
+
         Body trackedBody;
         public Body TrackedBody
         {
@@ -222,24 +285,40 @@ namespace KinectMvvm
                 //dbManager.setData("Skeletons are the same");
                 Console.WriteLine("Skeletons are the same");
                 timer.Enabled = true;
+
+                if(stopwatch.Elapsed.TotalMilliseconds >= 2000)
+                {
+                    positionNumber += 1;
+                    Console.WriteLine("Next file loaded for position: " + positionNumber);
+                    LoadPositionFile();
+                    stopwatch.Stop();
+                    stopwatch.Reset();
+                }
             }
         }
-        
+
         private void setBodyDeviation(BodyJoints trackedBodyJoints, BodyJoints idealBodyJoints)
         {
-            trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
-            double totalDeviation = 0.0;
-            double threshold = 25.0;
-            totalDeviation = trackedBodyJoints - idealBodyJoints;
-            Console.WriteLine("Total Deviation = " + totalDeviation);
-            if (totalDeviation > threshold)
+            if(idealBodyJoints != null)
             {
-                Console.WriteLine(BodyJoints.maxDeviatedJoint.Item1 + " deviated by " + BodyJoints.maxDeviatedJoint.Item2);
-                bodyHasNotDeviated = false;
-            }
-            else
-            {
-                bodyHasNotDeviated = true;
+                trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
+                double totalDeviation = 0.0;
+                double threshold = 50.0;
+                totalDeviation = trackedBodyJoints - idealBodyJoints;
+                Console.WriteLine("Total Deviation = " + totalDeviation + "Position: " + positionNumber);
+                if (totalDeviation > threshold)
+                {
+                    Console.WriteLine(BodyJoints.maxDeviatedJoint.Item1 + " deviated by " + BodyJoints.maxDeviatedJoint.Item2);
+                    bodyHasNotDeviated = false;
+                }
+                else
+                {
+                    bodyHasNotDeviated = true;
+                    if (!stopwatch.IsRunning)
+                    {
+                        stopwatch.Start();
+                    }
+                }
             }
         }
 

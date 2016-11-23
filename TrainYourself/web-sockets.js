@@ -37,21 +37,35 @@
         if (typeof event.data === "string") {
             msg.innerHTML = event.data;
             // SKELETON DATA
-            
+
+            //Ideal and Tracked body parsing and display
             // Get the data in JSON format.
             var jsonObject = JSON.parse(event.data);
             /*
-            {joints: [{x,y,z},{x,y,z}.....14 joints] }
+            {joints: idealBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]] trackedBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]]}
             
             */
             // Display the skeleton joints.
-            for (var j = 0; j < jsonObject.joints.length; j++) {
-                var joint = jsonObject.joints[j];
+            context.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Draw!!!
+            for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
+                var joint = jsonObject.idealBodyJoints[i].Position;
+
+                // Draw IdealBody!!!
                 context.fillStyle = "#FF0000";
                 context.beginPath();
-                context.arc(joint.x*1000, joint.y*1000, 2, 0, Math.PI * 2, true);
+                context.arc(joint.X * 300 + 200, canvas.height - joint.Y * 300 - 200, 10, 0, Math.PI * 2, true);
+                context.closePath();
+                context.fill();
+            }
+
+            for (var j = 0; j < jsonObject.trackedBodyJoints.length; j++) {
+                var joint = jsonObject.trackedBodyJoints[j].Position;
+
+                // Draw TrackedBody!!!
+                context.fillStyle = "#FF0000";
+                context.beginPath();
+                context.arc(joint.X * 300 + 200 + 700, canvas.height - joint.Y * 300 - 200, 10, 0, Math.PI * 2, true);
                 context.closePath();
                 context.fill();
             }
