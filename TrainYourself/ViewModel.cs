@@ -56,6 +56,8 @@ namespace KinectMvvm
         Timer timer;
         Stopwatch stopwatch = new Stopwatch();
         int positionNumber = 1;
+        double scaleRatio = 1.0;
+        string exerciseName = "";
         static List<IWebSocketConnection> _sockets;
         static bool _initialized = false;
 
@@ -72,46 +74,13 @@ namespace KinectMvvm
             
             this.kinectService = kinectService;
             this.kinectService.SkeletonUpdated += new System.EventHandler<SkeletonEventArgs>(kinectService_SkeletonUpdated);
-
-
-            //BodyJoints fileObject = new BodyJoints(idealBodyJoints);
-            //IFormatter formatter = new BinaryFormatter();
-            //Stream stream = new FileStream("F:\\College\\Quarter4\\218\\project\\positions\\exercise1\\1.bin", FileMode.Create, FileAccess.Write, FileShare.None);
-            //formatter.Serialize(stream, fileObject);
-            //stream.Close();
-
-            LoadPositionFile();
-
-            //IFormatter formatter2 = new BinaryFormatter();
-            //Stream stream2 = new FileStream("F:\\College\\Quarter4\\218\\project\\positions\\exercise1\\1.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
-            //BodyJoints fileObject2 = (BodyJoints)formatter.Deserialize(stream);
-            //stream.Close();
-            //float[,] idealBodyJoints2 = fileObject.idealBodyJoints;
-            /*
-            float[,] idealBodyJoints2 = {{ -0.009447459f , 0.60294944f, 1.31400883f} ,
-                                                    { 0.002266258f, 0.42004475f, 1.32388508f }  ,
-                                                    { 0.000935936f , 0.213289276f, 1.30896533f } ,
-                                                    {  0.000739973853f, -0.0607283078f, 1.25822461f }  ,
-                                                    { 0.220867485f, -0.1269243f, 1.17617548f },
-                                                    { -0.1677815f, -0.136166364f, 1.1603055f },
-                                                    { 0.07320645f, -0.0546527356f   ,1.22442615f },
-                                                    { -0.07176963f, -0.06349322f, 1.22342634f },
-                                                    { 0.238081276f, -0.330413043f, 1.10450733f },
-                                                    { -0.114430159f, -0.391302735f, 1.197041f },
-                                                    { 0.121732004f, -0.8049696f, 1.131731f },
-                                                    { 0.0298294257f, -0.8586146f, 1.19491315f },
-                                                    { 0.000113591552f, -0.7418386f, 1.09284163f },
-                                                    { 0.1216219f, -0.822920859f, 1.08214772f }};
-            //this.idealBodyJoints = idealBodyJoints2;
-            //setBodyDeviation(idealBodyJoints, idealBodyJoints2);
-            */
         }
 
         private void InitializeSocketconnection()
         {
             _sockets = new List<IWebSocketConnection>();
 
-            var server = new WebSocketServer("ws://127.0.0.1:8181");
+            var server = new WebSocketServer("ws://192.168.0.22:8181");
 
             server.Start(socket =>
             {
@@ -121,15 +90,30 @@ namespace KinectMvvm
                 };
                 socket.OnClose = () =>
                 {
+                    positionNumber = 1;
+                    exerciseName = "";
                     _sockets.Remove(socket);
                 };
                 socket.OnMessage = message =>
                 {
+                    exerciseName = message;
+                    positionNumber = 1;
                     Console.WriteLine(message);
+                    LoadPositionFile();
                 };
             });
 
             _initialized = true;
+        }
+
+        private void sendMessageToClient(string message)
+        {
+            if (!_initialized)
+                return;
+            foreach (var socket in _sockets)
+            {
+                socket.Send(message);
+            }
         }
 
         private void startSendingTrackedSkeleton(BodyJoints trackedBodyJoints)
@@ -173,8 +157,7 @@ namespace KinectMvvm
             JObject bodyJointsJson = new JObject();
             bodyJointsJson.Add("idealBodyJoints", idealJoints);
             bodyJointsJson.Add("trackedBodyJoints", trackedJoints);
-
-            Console.WriteLine("printing json " + bodyJointsJson);
+            bodyJointsJson.Add("scaleRatio", scaleRatio);
 
             foreach (var socket in _sockets)
             {
@@ -182,10 +165,14 @@ namespace KinectMvvm
             }
         }
 
-        private void LoadPositionFile()
+        private void LoadPositionFile(BodyJoints trackedBodyJoints = null)
         {
+            Console.WriteLine("ExerciseName: " + exerciseName);
+            if (String.IsNullOrEmpty(exerciseName))
+                return;
             IFormatter formatter = new BinaryFormatter();
-            string fileName = "..\\..\\..\\Dataset\\exercise1\\" + positionNumber.ToString() + ".bin";
+            string fileName = "..\\..\\..\\Dataset\\" + exerciseName + "\\" + positionNumber.ToString() + ".bin";
+            Console.WriteLine("FileName: " + fileName);
             if (File.Exists(fileName))
             {
                 Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -195,7 +182,21 @@ namespace KinectMvvm
             }
             else
             {
+                if (exerciseName.Equals("calibrate"))
+                {
+                    if (trackedBodyJoints != null)
+                    {
+                        double idealHeight = Math.Abs(idealBodyJoints.getJoint(JointType.Head).Position.Y - idealBodyJoints.getJoint(JointType.FootLeft).Position.Y);
+                        double trackedHeight = Math.Abs(trackedBodyJoints.getJoint(JointType.Head).Position.Y - trackedBodyJoints.getJoint(JointType.FootLeft).Position.Y);
+                        double idealWidth = Math.Abs(idealBodyJoints.getJoint(JointType.WristLeft).Position.X - idealBodyJoints.getJoint(JointType.WristRight).Position.X);
+                        double trackedWidth = Math.Abs(trackedBodyJoints.getJoint(JointType.WristLeft).Position.X - trackedBodyJoints.getJoint(JointType.WristRight).Position.X);
+                        scaleRatio = ((idealHeight / trackedHeight) + (idealWidth / trackedWidth)) / 2;
+                    }
+                }
+                exerciseName = "";
+                positionNumber = 1;
                 idealBodyJoints = null;
+                sendMessageToClient("You are done with the exercise");
                 Console.WriteLine("You are done with the exercise");
             }
         }
@@ -215,7 +216,7 @@ namespace KinectMvvm
         {
             BodyJoints fileObject = new BodyJoints(this.trackedBody);
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\exercise1\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\calibrate\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
             i++;
             formatter.Serialize(stream, fileObject);
             stream.Close();
@@ -235,17 +236,18 @@ namespace KinectMvvm
 
                 if (idealBodyJoints != null)
                 {
-                    getSkeletonAndUpdateTimer();
+                    //Joint Positions for the Tracked body
+                    BodyJoints trackedBodyJoints = new BodyJoints(trackedBody);
+                    getSkeletonAndUpdateTimer(trackedBodyJoints);
+
+                    if (idealBodyJoints == null)
+                        return;
+                    //Sending Tracked skeleton via web socket 
+                    startSendingTrackedSkeleton(trackedBodyJoints);
+
+                    //Compare the tracked and ideal right hand joint positions
+                    setBodyDeviation(trackedBodyJoints, idealBodyJoints);
                 }
-
-                //Joint Positions for the Tracked body
-                BodyJoints trackedBodyJoints = new BodyJoints(trackedBody);
-
-                //Sending Tracked skeleton via web socket 
-                startSendingTrackedSkeleton(trackedBodyJoints);
-
-                //Compare the tracked and ideal right hand joint positions
-                setBodyDeviation(trackedBodyJoints, idealBodyJoints);
             }
         }
 
@@ -276,7 +278,7 @@ namespace KinectMvvm
         public event PropertyChangedEventHandler PropertyChanged;
 
         //Skeleton processing code
-        private void getSkeletonAndUpdateTimer()
+        private void getSkeletonAndUpdateTimer(BodyJoints trackedBodyJoints)
         {
             if (bodyHasNotDeviated)
             {
@@ -290,7 +292,7 @@ namespace KinectMvvm
                 {
                     positionNumber += 1;
                     Console.WriteLine("Next file loaded for position: " + positionNumber);
-                    LoadPositionFile();
+                    LoadPositionFile(trackedBodyJoints);
                     stopwatch.Stop();
                     stopwatch.Reset();
                 }
@@ -303,7 +305,7 @@ namespace KinectMvvm
             {
                 trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
                 double totalDeviation = 0.0;
-                double threshold = 50.0;
+                double threshold = 80.0;
                 totalDeviation = trackedBodyJoints - idealBodyJoints;
                 Console.WriteLine("Total Deviation = " + totalDeviation + "Position: " + positionNumber);
                 if (totalDeviation > threshold)

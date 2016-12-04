@@ -38,6 +38,8 @@ namespace KinectMvvm
             joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.KneeRight)));
             joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootLeft)));
             joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootRight)));
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineShoulder)));
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineBase)));
 
             JObject jointJson = new JObject();
             jointJson.Add("joints", joints);

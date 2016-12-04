@@ -155,6 +155,9 @@ namespace KinectMvvm
 
             joints.Add(JointType.FootLeft, getJointPositions(body.Joints[JointType.FootLeft]));
             joints.Add(JointType.FootRight, getJointPositions(body.Joints[JointType.FootRight]));
+
+            joints.Add(JointType.SpineShoulder, getJointPositions(body.Joints[JointType.SpineShoulder]));
+            joints.Add(JointType.SpineBase, getJointPositions(body.Joints[JointType.SpineBase]));
         }
 
         public static double GetAngle(BodyJoints body, JointType jointType1, JointType jointType2, JointType jointType3)
