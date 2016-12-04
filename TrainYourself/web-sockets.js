@@ -5,6 +5,8 @@
     var buttonColor = document.getElementById("color");
     var buttonDepth = document.getElementById("depth");
     var context = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     var QueryString = function () {
         // This function is anonymous, is executed immediately and
         // the return value is assigned to QueryString!
@@ -45,7 +47,7 @@
     status.innerHTML = "Connecting to server...";
 
     // Initialize a new web socket.
-    var socket = new WebSocket("ws://127.0.0.1:8181");
+    var socket = new WebSocket("ws://192.168.0.11:8181");
 
     // Connection established.
     socket.onopen = function () {
@@ -102,46 +104,14 @@
 
     }
 
-    // Receive data FROM the server!
-    socket.onmessage = function (event) {
-        if (typeof event.data === "string") {
-            msg.innerHTML = event.data;
-            // SKELETON DATA
-
-            //Ideal and Tracked body parsing and display
-            // Get the data in JSON format.
-            var jsonObject = JSON.parse(event.data);
-            /*
-            {joints: idealBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]] trackedBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]]}
-            
-            */
-            // Display the skeleton joints.
-            context.clearRect(0, 0, canvas.width, canvas.height);
-
-            for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
-                jsonObject.idealBodyJoints[i].Position.X = jsonObject.idealBodyJoints[i].Position.X * 300 + 200;
-                jsonObject.idealBodyJoints[i].Position.Y = canvas.height - jsonObject.idealBodyJoints[i].Position.Y * 300 - 200;
-            }
-
-            for (var i = 0; i < jsonObject.trackedBodyJoints.length; i++) {
-                jsonObject.trackedBodyJoints[i].Position.X = jsonObject.trackedBodyJoints[i].Position.X * 300 + 200 + 700;
-                jsonObject.trackedBodyJoints[i].Position.Y = canvas.height - jsonObject.trackedBodyJoints[i].Position.Y * 300 - 200;
-            }
-
-            for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
-                var joint = jsonObject.idealBodyJoints[i].Position;
-
-                // Draw IdealBody!!!
-                context.fillStyle = "#FF0000";
-                context.beginPath();
-                context.arc(joint.X, joint.Y, 10, 0, Math.PI * 2, true);
-                context.closePath();
-                context.fill();
-            }
-
-            for (var j = 0; j < jsonObject.trackedBodyJoints.length; j++) {
+    function colorDeviatedJoint(jsonObject) {
+        var deviatedJointNumber = jsonObject.deviatedJointNumber;
+        for (var j = 0; j < jsonObject.trackedBodyJoints.length; j++) {
+            var jointNumber = (jsonObject.trackedBodyJoints[j].JointType);
+            //            console.log(jointNumber);
+            //            console.log("back" + deviatedJointNumber);
+            if (jointNumber == deviatedJointNumber) {
                 var joint = jsonObject.trackedBodyJoints[j].Position;
-
                 // Draw TrackedBody!!!
                 context.fillStyle = "#FF0000";
                 context.beginPath();
@@ -149,33 +119,179 @@
                 context.closePath();
                 context.fill();
             }
-            drawLines(jsonObject.idealBodyJoints);
-            drawLines(jsonObject.trackedBodyJoints);
         }
-        else if (event.data instanceof Blob) {
-            // RGB FRAME DATA
-            // 1. Get the raw data.
-            var blob = event.data;
+    }
 
-            // 2. Create a new URL for the blob object.
-            window.URL = window.URL || window.webkitURL;
+    function multiplyMatrixAndPoint(matrix, point) {
 
-            var source = window.URL.createObjectURL(blob);
+        //Give a simple variable name to each part of the matrix, a column and row number
+        var c0r0 = matrix[0], c1r0 = matrix[1], c2r0 = matrix[2], c3r0 = matrix[3];
+        var c0r1 = matrix[4], c1r1 = matrix[5], c2r1 = matrix[6], c3r1 = matrix[7];
+        var c0r2 = matrix[8], c1r2 = matrix[9], c2r2 = matrix[10], c3r2 = matrix[11];
+        var c0r3 = matrix[12], c1r3 = matrix[13], c2r3 = matrix[14], c3r3 = matrix[15];
 
-            // 3. Update the image source.
-            camera.src = source;
+        //Now set some simple names for the point
+        var x = point[0];
+        var y = point[1];
+        var z = point[2];
+        var w = point[3];
 
-            // 4. Release the allocated memory.
-            window.URL.revokeObjectURL(source);
+        //Multiply the point against each part of the 1st column, then add together
+        var resultX = (x * c0r0) + (y * c0r1) + (z * c0r2) + (w * c0r3);
+
+        //Multiply the point against each part of the 2nd column, then add together
+        var resultY = (x * c1r0) + (y * c1r1) + (z * c1r2) + (w * c1r3);
+
+        //Multiply the point against each part of the 3rd column, then add together
+        var resultZ = (x * c2r0) + (y * c2r1) + (z * c2r2) + (w * c2r3);
+
+        //Multiply the point against each part of the 4th column, then add together
+        var resultW = (x * c3r0) + (y * c3r1) + (z * c3r2) + (w * c3r3);
+
+        return [resultX, resultY, resultZ, resultW]
+    }
+
+    // Rotate for side view
+    function rotateSkeleton(bodyJoints) {
+        xAngle = 0.78;
+        yAngle = 0.6;
+        pivotIndex = 16 // Joint index
+        var xRotationMatrix = [
+                              1, 0, 0, 0,
+                              0, Math.cos(xAngle), Math.sin(xAngle), 0,
+                              0, -Math.sin(xAngle), Math.cos(xAngle), 0,
+                              0, 0, 0, 1
+        ];
+
+        var yRotationMatrix = [
+                              Math.cos(yAngle), 0, -Math.sin(yAngle), 0,
+                              0, 1, 0, 0,
+                              Math.sin(yAngle), 0, Math.cos(yAngle), 0,
+                              0, 0, 0, 1
+        ];
+
+        var rotatedJoints = bodyJoints;
+        for (var i = 0; i < bodyJoints.length; i++) {
+            var point = [bodyJoints[i].Position.X - bodyJoints[pivotIndex].Position.X,
+                        bodyJoints[i].Position.Y - bodyJoints[pivotIndex].Position.Y,
+                        bodyJoints[i].Position.Z - bodyJoints[pivotIndex].Position.Z,
+                        1];
+            rotatedPoint = multiplyMatrixAndPoint(xRotationMatrix, point);
+            rotatedPoint = multiplyMatrixAndPoint(yRotationMatrix, rotatedPoint);
+            rotatedJoints[i].Position.X = rotatedPoint[0];
+            rotatedJoints[i].Position.Y = rotatedPoint[1];
+            rotatedJoints[i].Position.Z = rotatedPoint[2];
+        }
+
+        for (var i = 0; i < rotatedJoints.length; i++) {
+            rotatedJoints[i].Position.X += rotatedJoints[pivotIndex].Position.X;
+            rotatedJoints[i].Position.Y += rotatedJoints[pivotIndex].Position.Y;
+            rotatedJoints[i].Position.Z += rotatedJoints[pivotIndex].Position.Z;
+        }
+
+        return rotatedJoints;
+    }
+
+    // Receive data FROM the server!
+    socket.onmessage = function (event) {
+        if (typeof event.data === "string") {
+            //msg.innerHTML = event.data;
+            // SKELETON DATA
+
+            //Ideal and Tracked body parsing and display
+            // Get the data in JSON format.
+            try {
+                var jsonObject = JSON.parse(event.data);
+                if ('deviatedJointName' in jsonObject) {
+                    msg.innerHTML = jsonObject.deviatedJointName + " not in position";
+                }
+                else {
+                    msg.innerHTML = "Hold the posture";
+                }
+            }
+            catch (e) {
+                msg.innerHTML = event.data;
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            /*
+            {joints: idealBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]] trackedBodyJoints:[[{JointType:0, Position:{X,Y,Z}, TrackingState:0}.....15 joints]]}
+
+            */
+            // Display the skeleton joints.
+
+            if ('idealBodyJoints' in jsonObject) {
+                refreshIdealBody = true;
+            } else {
+                refreshIdealBody = false;
+            }
+
+            if (refreshIdealBody) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+                context.clearRect(canvas.width / 2, 0, canvas.width / 2, canvas.height);
+            }
+            console.log(jsonObject);
+
+            var scaleRatio = jsonObject.scaleRatio;
+            //            rotateSkeleton(jsonObject.idealBodyJoints);
+            //            rotateSkeleton(jsonObject.trackedBodyJoints);
+            console.log(jsonObject);
+
+
+            if (refreshIdealBody) {
+                for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
+                    jsonObject.idealBodyJoints[i].Position.X = jsonObject.idealBodyJoints[i].Position.X * 300 + 200;
+                    jsonObject.idealBodyJoints[i].Position.Y = canvas.height - jsonObject.idealBodyJoints[i].Position.Y * 300 - 200;
+                }
+            }
+
+            for (var i = 0; i < jsonObject.trackedBodyJoints.length; i++) {
+                jsonObject.trackedBodyJoints[i].Position.X = jsonObject.trackedBodyJoints[i].Position.X * 300 * scaleRatio + 200 + 700;
+                jsonObject.trackedBodyJoints[i].Position.Y = canvas.height - jsonObject.trackedBodyJoints[i].Position.Y * 300 * scaleRatio - 200;
+            }
+
+            if (refreshIdealBody) {
+                for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
+                    var joint = jsonObject.idealBodyJoints[i].Position;
+
+                    // Draw IdealBody!!!
+                    context.fillStyle = "#00FF00";
+                    context.beginPath();
+                    context.arc(joint.X, joint.Y, 10, 0, Math.PI * 2, true);
+                    context.closePath();
+                    context.fill();
+                }
+            }
+
+            for (var j = 0; j < jsonObject.trackedBodyJoints.length; j++) {
+                var joint = jsonObject.trackedBodyJoints[j].Position;
+                // Draw TrackedBody!!!
+                context.fillStyle = "#00FF00";
+                context.beginPath();
+                context.arc(joint.X, joint.Y, 10, 0, Math.PI * 2, true);
+                context.closePath();
+                context.fill();
+            }
+
+            if ('deviatedJointNumber' in jsonObject) {
+                colorDeviatedJoint(jsonObject);
+            }
+
+            if (refreshIdealBody) {
+                drawLines(jsonObject.idealBodyJoints);
+            }
+            drawLines(jsonObject.trackedBodyJoints);
         }
     };
 
-    buttonColor.onclick = function () {
-        console.log('from onclick');
-        socket.send("exercise1");
-    }
-
-    buttonDepth.onclick = function () {
-        socket.send("Depth");
-    }
+    //    buttonColor.onclick = function () {
+    //        console.log('from onclick');
+    //        socket.send("exercise1");
+    //    }
+    //
+    //    buttonDepth.onclick = function () {
+    //        socket.send("Depth");
+    //    }
 };

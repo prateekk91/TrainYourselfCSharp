@@ -63,6 +63,8 @@ namespace KinectMvvm
         private String deviatedJointName = "";
         private JointType deviatedJointNumber = JointType.Head;
 
+        bool positionChanged = true;
+
         public ViewModel(IKinectService kinectService)
         {
             dbManager = new DBManager();
@@ -78,7 +80,7 @@ namespace KinectMvvm
         {
             _sockets = new List<IWebSocketConnection>();
 
-            var server = new WebSocketServer("ws://127.0.0.1:8181");
+            var server = new WebSocketServer("ws://192.168.0.11:8181");
 
             server.Start(socket =>
             {
@@ -96,6 +98,7 @@ namespace KinectMvvm
                 {
                     exerciseName = message;
                     positionNumber = 1;
+                    positionChanged = true;
                     Console.WriteLine(message);
                     LoadPositionFile();
                 };
@@ -157,7 +160,11 @@ namespace KinectMvvm
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.SpineBase)));
 
             JObject bodyJointsJson = new JObject();
-            bodyJointsJson.Add("idealBodyJoints", idealJoints);
+            if (positionChanged)
+            {
+                bodyJointsJson.Add("idealBodyJoints", idealJoints);
+                positionChanged = false;
+            }
             bodyJointsJson.Add("trackedBodyJoints", trackedJoints);
             bodyJointsJson.Add("scaleRatio", scaleRatio);
             if (!String.IsNullOrEmpty(deviatedJointName))
@@ -177,7 +184,7 @@ namespace KinectMvvm
             if (String.IsNullOrEmpty(exerciseName))
                 return;
             IFormatter formatter = new BinaryFormatter();
-            string fileName = "..\\..\\..\\Dataset\\" + exerciseName + "\\" + positionNumber.ToString() + ".bin";
+            string fileName = "..\\..\\..\\Dataset\\" + "sample" + "\\" + positionNumber.ToString() + ".bin";
             Console.WriteLine("FileName: " + fileName);
             if (File.Exists(fileName))
             {
@@ -301,6 +308,7 @@ namespace KinectMvvm
                     LoadPositionFile(trackedBodyJoints);
                     stopwatch.Stop();
                     stopwatch.Reset();
+                    positionChanged = true;
                 }
             }
         }
