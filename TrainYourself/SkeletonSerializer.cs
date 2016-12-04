@@ -23,23 +23,23 @@ namespace KinectMvvm
 
             JArray joints = new JArray();
 
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.Head)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.Neck)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ShoulderRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ShoulderLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineMid)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ElbowLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ElbowRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.WristLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.WristRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.HipLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.HipRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.KneeLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.KneeRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootLeft)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootRight)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineShoulder)));
-            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineBase)));
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.Head)));    //0
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.Neck)));    //1
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ShoulderRight)));   //2
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ShoulderLeft)));    //3
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineMid)));        //4
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ElbowLeft)));       //5
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.ElbowRight)));      //6
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.WristLeft)));       //7
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.WristRight)));      //8
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.HipLeft)));         //9
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.HipRight)));        //10
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.KneeLeft)));        //11
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.KneeRight)));       //12
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootLeft)));        //13
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.FootRight)));       //14
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineShoulder)));   //15
+            joints.Add(JObject.FromObject(bodyJoints.getJoint(JointType.SpineBase)));       //16
 
             JObject jointJson = new JObject();
             jointJson.Add("joints", joints);

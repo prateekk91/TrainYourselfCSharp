@@ -6,18 +6,14 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Windows.Input;
-using System.Windows;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Fleck;
 using System.Collections.Generic;
-using Coding4Fun.Kinect.Wpf;
-using LightBuzz.Vitruvius;
 using System.Diagnostics;
 
 namespace KinectMvvm
 {
-    
+
     public class ViewModel : INotifyPropertyChanged
     {
         IKinectService kinectService;
@@ -64,6 +60,8 @@ namespace KinectMvvm
         private bool bodyHasNotDeviated = true;
         //Joint Positions for the Ideal body
         BodyJoints idealBodyJoints;
+        private String deviatedJointName = "";
+        private JointType deviatedJointNumber = JointType.Head;
 
         public ViewModel(IKinectService kinectService)
         {
@@ -80,7 +78,7 @@ namespace KinectMvvm
         {
             _sockets = new List<IWebSocketConnection>();
 
-            var server = new WebSocketServer("ws://192.168.0.22:8181");
+            var server = new WebSocketServer("ws://127.0.0.1:8181");
 
             server.Start(socket =>
             {
@@ -136,6 +134,8 @@ namespace KinectMvvm
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.KneeRight)));
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.FootLeft)));
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.FootRight)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.SpineShoulder)));
+            idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.SpineBase)));
 
             JArray trackedJoints = new JArray();
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.Head)));
@@ -153,12 +153,18 @@ namespace KinectMvvm
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.KneeRight)));
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.FootLeft)));
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.FootRight)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.SpineShoulder)));
+            trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.SpineBase)));
 
             JObject bodyJointsJson = new JObject();
             bodyJointsJson.Add("idealBodyJoints", idealJoints);
             bodyJointsJson.Add("trackedBodyJoints", trackedJoints);
             bodyJointsJson.Add("scaleRatio", scaleRatio);
-
+            if (!String.IsNullOrEmpty(deviatedJointName))
+            {
+                bodyJointsJson.Add("deviatedJointName", deviatedJointName);
+                bodyJointsJson.Add("deviatedJointNumber", (int)(deviatedJointNumber));
+            }
             foreach (var socket in _sockets)
             {
                 socket.Send(bodyJointsJson.ToString());
@@ -216,7 +222,7 @@ namespace KinectMvvm
         {
             BodyJoints fileObject = new BodyJoints(this.trackedBody);
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\calibrate\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\sample\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
             i++;
             formatter.Serialize(stream, fileObject);
             stream.Close();
@@ -311,10 +317,13 @@ namespace KinectMvvm
                 if (totalDeviation > threshold)
                 {
                     Console.WriteLine(BodyJoints.maxDeviatedJoint.Item1 + " deviated by " + BodyJoints.maxDeviatedJoint.Item2);
+                    deviatedJointName = BodyJoints.maxDeviatedJoint.Item1.ToString();
+                    deviatedJointNumber = BodyJoints.maxDeviatedJoint.Item1;
                     bodyHasNotDeviated = false;
                 }
                 else
                 {
+                    deviatedJointName = "";
                     bodyHasNotDeviated = true;
                     if (!stopwatch.IsRunning)
                     {

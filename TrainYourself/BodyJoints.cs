@@ -14,7 +14,7 @@ namespace KinectMvvm
     public class BodyJoints
     {
         Dictionary<JointType, Position> joints;
-        public static Tuple<String, double> maxDeviatedJoint;
+        public static Tuple<JointType, double> maxDeviatedJoint;
 
         [Serializable]
         public class Position
@@ -38,6 +38,7 @@ namespace KinectMvvm
             joint.Position.X = pos.x;
             joint.Position.Y = pos.y;
             joint.Position.Z = pos.z;
+            joint.JointType = jointType;
 
             return joint;
         }
@@ -45,7 +46,7 @@ namespace KinectMvvm
         public static double operator -(BodyJoints trackedBody, BodyJoints idealBody)
         {
             double totalDeviation = 0;
-            maxDeviatedJoint = new Tuple<string, double>("", 0.0);
+            maxDeviatedJoint = new Tuple<JointType, double>(JointType.Head, 0.0);
             var trackedBodyAngle = GetAngle(trackedBody, JointType.ShoulderRight, JointType.ElbowRight, JointType.WristRight);
             var idealBodyAngle = GetAngle(idealBody, JointType.ShoulderRight, JointType.ElbowRight, JointType.WristRight);
             var deviation = Math.Abs(idealBodyAngle - trackedBodyAngle);
@@ -101,7 +102,7 @@ namespace KinectMvvm
         {
             if (maxDeviatedJoint.Item2 < deviation)
             {
-                maxDeviatedJoint = Tuple.Create(joint.ToString(), deviation);
+                maxDeviatedJoint = Tuple.Create(joint, deviation);
             }
         }
 
@@ -137,6 +138,7 @@ namespace KinectMvvm
 
             joints.Add(JointType.SpineMid, getJointPositions(body.Joints[JointType.SpineMid]));
             joints.Add(JointType.SpineBase, getJointPositions(body.Joints[JointType.SpineBase]));
+            joints.Add(JointType.SpineShoulder, getJointPositions(body.Joints[JointType.SpineShoulder]));
 
             joints.Add(JointType.ElbowLeft, getJointPositions(body.Joints[JointType.ElbowLeft]));
             joints.Add(JointType.ElbowRight, getJointPositions(body.Joints[JointType.ElbowRight]));
@@ -155,9 +157,7 @@ namespace KinectMvvm
 
             joints.Add(JointType.FootLeft, getJointPositions(body.Joints[JointType.FootLeft]));
             joints.Add(JointType.FootRight, getJointPositions(body.Joints[JointType.FootRight]));
-
-            joints.Add(JointType.SpineShoulder, getJointPositions(body.Joints[JointType.SpineShoulder]));
-            joints.Add(JointType.SpineBase, getJointPositions(body.Joints[JointType.SpineBase]));
+            
         }
 
         public static double GetAngle(BodyJoints body, JointType jointType1, JointType jointType2, JointType jointType3)
