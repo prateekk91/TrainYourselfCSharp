@@ -80,18 +80,21 @@ namespace KinectMvvm
         {
             _sockets = new List<IWebSocketConnection>();
 
-            var server = new WebSocketServer("ws://192.168.0.11:8181");
+            var server = new WebSocketServer("ws://192.168.0.22:8181");
 
             server.Start(socket =>
             {
                 socket.OnOpen = () =>
                 {
+                    Console.WriteLine("Socket opened. Num socket=" + _sockets.Count);
                     _sockets.Add(socket);
                 };
                 socket.OnClose = () =>
                 {
+                    Console.WriteLine("Socket closed. Num sockets=" + _sockets.Count);
                     positionNumber = 1;
                     exerciseName = "";
+                    positionChanged = true;
                     _sockets.Remove(socket);
                 };
                 socket.OnMessage = message =>
@@ -160,7 +163,7 @@ namespace KinectMvvm
             trackedJoints.Add(JObject.FromObject(trackedBodyJoints.getJoint(JointType.SpineBase)));
 
             JObject bodyJointsJson = new JObject();
-            if (positionChanged)
+            //if (positionChanged)
             {
                 bodyJointsJson.Add("idealBodyJoints", idealJoints);
                 positionChanged = false;
@@ -184,7 +187,7 @@ namespace KinectMvvm
             if (String.IsNullOrEmpty(exerciseName))
                 return;
             IFormatter formatter = new BinaryFormatter();
-            string fileName = "..\\..\\..\\Dataset\\" + "sample" + "\\" + positionNumber.ToString() + ".bin";
+            string fileName = "..\\..\\..\\Dataset\\" + "SingleLegDeadLift" + "\\" + positionNumber.ToString() + ".bin";
             Console.WriteLine("FileName: " + fileName);
             if (File.Exists(fileName))
             {
@@ -206,11 +209,11 @@ namespace KinectMvvm
                         scaleRatio = ((idealHeight / trackedHeight) + (idealWidth / trackedWidth)) / 2;
                     }
                 }
+                sendMessageToClient("You are done with the exercise");
+                Console.WriteLine("You are done with the exercise");
                 exerciseName = "";
                 positionNumber = 1;
                 idealBodyJoints = null;
-                sendMessageToClient("You are done with the exercise");
-                Console.WriteLine("You are done with the exercise");
             }
         }
 
@@ -229,7 +232,7 @@ namespace KinectMvvm
         {
             BodyJoints fileObject = new BodyJoints(this.trackedBody);
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\sample\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\SingleLegDeadLift\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
             i++;
             formatter.Serialize(stream, fileObject);
             stream.Close();
@@ -317,9 +320,9 @@ namespace KinectMvvm
         {
             if(idealBodyJoints != null)
             {
-                trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
+                //trackedBodyJoints = TranslateSkeleton(idealBodyJoints, trackedBodyJoints);
                 double totalDeviation = 0.0;
-                double threshold = 80.0;
+                double threshold = 60.0;
                 totalDeviation = trackedBodyJoints - idealBodyJoints;
                 Console.WriteLine("Total Deviation = " + totalDeviation + "Position: " + positionNumber);
                 if (totalDeviation > threshold)
