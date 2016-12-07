@@ -62,7 +62,7 @@ namespace KinectMvvm
         BodyJoints idealBodyJoints;
         private String deviatedJointName = "";
         private JointType deviatedJointNumber = JointType.Head;
-
+        private double deviationAngle = 0.0;
         bool positionChanged = true;
 
         public ViewModel(IKinectService kinectService)
@@ -80,7 +80,7 @@ namespace KinectMvvm
         {
             _sockets = new List<IWebSocketConnection>();
 
-            var server = new WebSocketServer("ws://192.168.0.22:8181");
+            var server = new WebSocketServer("ws://137.110.91.71:8181");
 
             server.Start(socket =>
             {
@@ -125,6 +125,8 @@ namespace KinectMvvm
             if (!_initialized) return;
 
             JArray idealJoints = new JArray();
+            Console.WriteLine("Ideal: " + idealBodyJoints.getJoint(JointType.Head).Position.X +  " " + idealBodyJoints.getJoint(JointType.Head).Position.Y + " " + idealBodyJoints.getJoint(JointType.Head).Position.Z);
+            Console.WriteLine("Track: " + trackedBodyJoints.getJoint(JointType.Head).Position.X + " " + trackedBodyJoints.getJoint(JointType.Head).Position.Y + " " + trackedBodyJoints.getJoint(JointType.Head).Position.Z);
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.Head)));
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.Neck)));
             idealJoints.Add(JObject.FromObject(idealBodyJoints.getJoint(JointType.ShoulderRight)));
@@ -170,10 +172,12 @@ namespace KinectMvvm
             }
             bodyJointsJson.Add("trackedBodyJoints", trackedJoints);
             bodyJointsJson.Add("scaleRatio", scaleRatio);
+            Console.WriteLine("Scale Ratio: " + scaleRatio);
             if (!String.IsNullOrEmpty(deviatedJointName))
             {
                 bodyJointsJson.Add("deviatedJointName", deviatedJointName);
                 bodyJointsJson.Add("deviatedJointNumber", (int)(deviatedJointNumber));
+                bodyJointsJson.Add("deviatedAngle", (int)deviationAngle);
             }
             foreach (var socket in _sockets)
             {
@@ -187,7 +191,7 @@ namespace KinectMvvm
             if (String.IsNullOrEmpty(exerciseName))
                 return;
             IFormatter formatter = new BinaryFormatter();
-            string fileName = "..\\..\\..\\Dataset\\" + "SingleLegDeadLift" + "\\" + positionNumber.ToString() + ".bin";
+            string fileName = "..\\..\\..\\Dataset\\" + exerciseName + "\\" + positionNumber.ToString() + ".bin";
             Console.WriteLine("FileName: " + fileName);
             if (File.Exists(fileName))
             {
@@ -232,7 +236,7 @@ namespace KinectMvvm
         {
             BodyJoints fileObject = new BodyJoints(this.trackedBody);
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream("..\\..\\..\\Dataset\\SingleLegDeadLift\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream("..\\..\\..\\Dataset\\calibrate\\" + i.ToString() + ".bin", FileMode.Create, FileAccess.Write, FileShare.None);
             i++;
             formatter.Serialize(stream, fileObject);
             stream.Close();
@@ -330,6 +334,7 @@ namespace KinectMvvm
                     Console.WriteLine(BodyJoints.maxDeviatedJoint.Item1 + " deviated by " + BodyJoints.maxDeviatedJoint.Item2);
                     deviatedJointName = BodyJoints.maxDeviatedJoint.Item1.ToString();
                     deviatedJointNumber = BodyJoints.maxDeviatedJoint.Item1;
+                    deviationAngle = BodyJoints.maxDeviatedJoint.Item2;
                     bodyHasNotDeviated = false;
                 }
                 else

@@ -47,7 +47,7 @@
     status.innerHTML = "Connecting to server...";
 
     // Initialize a new web socket.
-    var socket = new WebSocket("ws://192.168.0.11:8181");
+    var socket = new WebSocket("ws://192.168.0.22:8181");
 
     // Connection established.
     socket.onopen = function () {
@@ -242,14 +242,32 @@
 
             if (refreshIdealBody) {
                 for (var i = 0; i < jsonObject.idealBodyJoints.length; i++) {
-                    jsonObject.idealBodyJoints[i].Position.X = jsonObject.idealBodyJoints[i].Position.X * 300 + 200;
-                    jsonObject.idealBodyJoints[i].Position.Y = canvas.height - jsonObject.idealBodyJoints[i].Position.Y * 300 - 200;
+                    jsonObject.idealBodyJoints[i].Position.X = jsonObject.idealBodyJoints[i].Position.X + 200;
+                    jsonObject.idealBodyJoints[i].Position.Y = jsonObject.idealBodyJoints[i].Position.Y + 200;
                 }
             }
 
+            var translateFootX = 0;
+            var translateFootY = 0;
+
+            if (jsonObject.trackedBodyJoints[13].Position.Y > jsonObject.trackedBodyJoints[14].Position.Y) {
+                var footPositionX = jsonObject.trackedBodyJoints[13].Position.X;
+                var footPositionY = jsonObject.trackedBodyJoints[13].Position.Y;
+                var newFootPositionX = jsonObject.trackedBodyJoints[13].Position.X * scaleRatio;
+                var newFootPositionY = jsonObject.trackedBodyJoints[13].Position.Y * scaleRatio;
+            } else {
+                var footPositionX = jsonObject.trackedBodyJoints[14].Position.X;
+                var footPositionY = jsonObject.trackedBodyJoints[14].Position.Y;
+                var newFootPositionX = jsonObject.trackedBodyJoints[14].Position.X * scaleRatio;
+                var newFootPositionY = jsonObject.trackedBodyJoints[14].Position.Y * scaleRatio;
+            }
+
+            translateFootX = footPositionX - newFootPositionX;
+            translateFootY = footPositionY - newFootPositionY;
+            
             for (var i = 0; i < jsonObject.trackedBodyJoints.length; i++) {
-                jsonObject.trackedBodyJoints[i].Position.X = jsonObject.trackedBodyJoints[i].Position.X * 300 * scaleRatio + 200 + 700;
-                jsonObject.trackedBodyJoints[i].Position.Y = canvas.height - jsonObject.trackedBodyJoints[i].Position.Y * 300 * scaleRatio - 200;
+                jsonObject.trackedBodyJoints[i].Position.X = jsonObject.trackedBodyJoints[i].Position.X * scaleRatio + translateFootX + 200 + 700;
+                jsonObject.trackedBodyJoints[i].Position.Y = jsonObject.trackedBodyJoints[i].Position.Y * scaleRatio + translateFootY + 200;
             }
 
             if (refreshIdealBody) {

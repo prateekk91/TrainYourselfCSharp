@@ -94,7 +94,7 @@ namespace KinectMvvm
             deviation = Math.Abs(idealBodyAngle - trackedBodyAngle);
             totalDeviation += deviation;
             updateMaxDeviation(JointType.HipLeft, deviation);
-
+            
             return totalDeviation;
         }
 
@@ -108,7 +108,8 @@ namespace KinectMvvm
 
         private Position getJointPositions(Joint joint)
         {
-            return new Position(joint.Position.X, joint.Position.Y, joint.Position.Z);
+            var depthJoint = joint.Position.ToPoint(Visualization.Depth);
+            return new Position((float)depthJoint.X, (float)depthJoint.Y, joint.Position.Z);
         }
 
         public int getNumJoints()
